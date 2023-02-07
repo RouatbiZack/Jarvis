@@ -1,0 +1,137 @@
+import pyttsx3 #text to speech
+import speech_recognition as sr 
+import time 
+from openpyxl import * #load workbook in Excel
+import random #to allow random replies to questions
+import datetime
+import pycaw.pycaw
+import re
+import smtplib
+
+"""variables"""
+r = sr.Recognizer()
+keywords = [("jarvis", 1), ("hey jarvis", 1), ] # setting up the 'start recognizer function' words
+source = sr.Microphone() #setting up which mic we are using
+
+
+"""Functions""" 
+def extract_integers(list):
+    result = []
+    for token in list:
+        try:
+            result.append(int(token))
+        except ValueError:
+            continue
+    return result
+def split_string(string, separators):
+    pattern = '|'.join(map(re.escape, separators))
+    return re.split(pattern, string)
+
+
+def set_volume(volume):
+    volume = int((volume * 65535)/100)
+    sessions = pycaw.pycaw.AudioUtilities.GetAllSessions()
+    for session in sessions:
+        volume_control = session.SimpleAudioVolume
+        volume_control.SetMasterVolume(volume, None)
+
+def Speak(text):
+    rate = 100 #Sets the default rate of speech
+    engine = pyttsx3.init() #Initialises the speech engine
+    voices = engine.getProperty('voices') #sets the properties for speech
+    engine.setProperty('voice', voices[0].id) #Gender and type of voice
+    engine.setProperty('rate', rate+50) #Adjusts the rate of speech
+    engine.say(text) #tells Python to speak variable 'text'
+    engine.runAndWait() #waits for speech to finish and then continues with program
+def callback(recognizer, audio):
+    try:
+        speech_as_text = recognizer.recognize_sphinx(audio, keyword_entries=keywords) #Uses Sphinx to recognise speech
+        print(speech_as_text) #prints what was said on the screen
+        if "jarvis" in speech_as_text or "hey jarvis": #starter names
+            Speak("Yes sir?") #Calls 'Speak' and acknowledges user
+            recognize_main() #Runs the function recognize_main
+    except sr.UnknownValueError: #if there is nothing understood
+        print("Oops! Didn't catch that") #prints to screen error message
+def start_recognizer(): #initial keyword call
+    print("Waiting for a keyword...Jarvis or Hey Jarvis") #Prints to screen
+    r.listen_in_background(source, callback) #Sets off recognition sequence
+    time.sleep(1000000) #keeps loop running
+def recognize_main(): #Main reply call function
+    r = sr.Recognizer() # sets r variable
+    with sr.Microphone() as source: #sets microphone
+        print("Say something!") #prints to screen
+        audio = r.listen(source) #sets variable 'audio'
+    data = "" #assigns user voice entry to variable 'data'
+    try:
+        data = r.recognize_google(audio) 
+        data.lower() 
+        print("You said: " + data) 
+#Greetings---------------------------------------------------------------------
+        
+        if data in hello_list:
+            hour=datetime.datetime.now().hour
+            if hour>=0 and hour<12:
+                Speak("Good morning, sir")
+            elif hour>=12 and hour<18:
+                Speak("Good Afternoon, Sir")
+            else:
+                Speak("Good Evening, Sir")
+            time.sleep(2)
+        elif data in how_are_you:
+            Speak (random.choice(reply_how_are_you))
+            time.sleep(2)
+        elif "what is the time" in data:
+            strTime=datetime.datetime.now().strftime("%H:%M")
+            Speak(f"the time is {strTime}")
+            time.sleep(2)
+        elif "what day is it" in data:
+            day = datetime.datetime.today().weekday() + 1
+            Day_dict = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
+                        4: 'Thursday', 5: 'Friday', 6: 'Saturday',
+                        7: 'Sunday'}
+            if day in Day_dict.keys():
+                day_of_the_week = Day_dict[day]
+                print(day_of_the_week)
+                Speak("The day is " + day_of_the_week)
+                time.sleep(2)
+        elif data in what_are_you:
+            Speak (random.choice(reply_what_are_you))
+            time.sleep(2)
+        else:
+            Speak("I'm sorry sir, I did not understand your request") 
+    except sr.UnknownValueError: 
+        print("Jarvis did not understand your request")
+    except sr.RequestError as e: # if you get a request error from Google speech engine
+        print("Could not request results from Google Speech Recognition service; {0}".format(e))
+def excel():
+    wb = load_workbook("input.xlsx") 
+    wu = wb.get_sheet_by_name('User') 
+    wr = wb.get_sheet_by_name('Replies') 
+
+    global hello_list
+    global how_are_you
+    global what_are_you
+    urow1 = wu['1'] #hello
+    urow2 = wu['2'] #how are you
+    urow3 = wu['3']#what are you?
+    hello_list = [urow1[x].value for x in range(len(urow1))]
+    how_are_you = [urow2[x].value for x in range(len(urow2))]
+    what_are_you = [urow3[x].value for x in range(len(urow3))]
+
+
+    global reply_hello_list
+    global reply_how_are_you
+    global reply_what_are_you
+    rrow1 = wr['1'] #Hello
+    rrow2 = wr['2'] #how are you
+    rrow3 = wr['3']#what are you
+    reply_hello_list = [rrow1[x].value for x in range(len(rrow1))]
+    reply_how_are_you = [rrow2[x].value for x in range(len(rrow2))]
+    reply_what_are_you = [rrow3[x].value for x in range(len(rrow3))]
+
+"""Main program"""
+excel()
+while 1: 
+    start_recognizer() 
+
+

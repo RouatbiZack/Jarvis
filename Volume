@@ -1,0 +1,15 @@
+import pycaw.pycaw
+
+# Get a reference to the default audio endpoint
+audio = pycaw.pycaw.AudioUtilities.GetDefaultAudioEndpoint()
+
+# Get the volume control for the default audio endpoint
+volume_control = audio.AudioEndpointVolume
+
+# Set the volume to 50%
+volume_control.SetMasterVolumeLevelScalar(0.5, None)
+
+# Get the current volume level
+volume = volume_control.GetMasterVolumeLevelScalar()
+
+print("Current volume: {}%".format(int(volume * 100)))
