@@ -7,6 +7,28 @@ import datetime
 import pycaw.pycaw
 import re
 import smtplib
+import pyautogui as p
+import math, time
+import tkinter
+root = tkinter.Tk()
+root.withdraw()
+def set_vol(new_volume):
+    p.press('volumedown', presses = 50) #sets volume to zero
+    time.sleep(0.5) #using time.sleep to space the presses 
+    x = math.floor(new_volume / 2) #setting the amount of presses required
+    p.press('volumeup', presses = x) #setting volume
+def extract_integers(list):
+    result = []
+    for token in list:
+        try:
+            result.append(int(token))
+        except ValueError:
+            continue
+    return result
+def split_string(string, separators):
+    pattern = '|'.join(map(re.escape, separators))
+    return re.split(pattern, string)
+
 
 """variables"""
 r = sr.Recognizer()
@@ -26,14 +48,6 @@ def extract_integers(list):
 def split_string(string, separators):
     pattern = '|'.join(map(re.escape, separators))
     return re.split(pattern, string)
-
-
-def set_volume(volume):
-    volume = int((volume * 65535)/100)
-    sessions = pycaw.pycaw.AudioUtilities.GetAllSessions()
-    for session in sessions:
-        volume_control = session.SimpleAudioVolume
-        volume_control.SetMasterVolume(volume, None)
 
 def Speak(text):
     rate = 100 #Sets the default rate of speech
@@ -97,6 +111,21 @@ def recognize_main(): #Main reply call function
         elif data in what_are_you:
             Speak (random.choice(reply_what_are_you))
             time.sleep(2)
+        
+        elif "mute" in data :
+                Speak("The sound has been muted")
+                set_vol(0)
+        elif (("set " or "change") and "volume") in data :
+            if "max" in data :
+                set_vol(100)
+                Speak("The volume is set to maximum")
+            else :
+               separators=[" ","%"]
+               vol_list=split_string(data,separators)
+               volume=extract_integers(vol_list)
+               set_vol(volume[0])
+               Speak("volume set to "+str(volume)+"%")
+
         else:
             Speak("I'm sorry sir, I did not understand your request") 
     except sr.UnknownValueError: 
@@ -114,10 +143,11 @@ def excel():
     urow1 = wu['1'] #hello
     urow2 = wu['2'] #how are you
     urow3 = wu['3']#what are you?
+    urow4 = wu['4']#VolumeSettings
     hello_list = [urow1[x].value for x in range(len(urow1))]
     how_are_you = [urow2[x].value for x in range(len(urow2))]
     what_are_you = [urow3[x].value for x in range(len(urow3))]
-
+   
 
     global reply_hello_list
     global reply_how_are_you
